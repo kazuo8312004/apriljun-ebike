@@ -1,5 +1,4 @@
 <?php
-// database/seeders/AdminUserSeeder.php
 
 namespace Database\Seeders;
 
@@ -12,10 +11,12 @@ class AdminUserSeeder extends Seeder
 {
     public function run()
     {
-        $sdoBranch = Branch::where('code', 'SDO')->first();
-        $btyBranch = Branch::where('code', 'BTY')->first();
-        $nrvBranch = Branch::where('code', 'NRV')->first();
+        // Ensure branches exist
+        $sdoBranch = Branch::firstOrCreate(['code' => 'SDO'], ['name' => 'San Simon']);
+        $btyBranch = Branch::firstOrCreate(['code' => 'BTY'], ['name' => 'Batasan']);
+        $nrvBranch = Branch::firstOrCreate(['code' => 'NRV'], ['name' => 'Norzagaray']);
 
+        // Seed users
         $users = [
             [
                 'name' => 'System Administrator',

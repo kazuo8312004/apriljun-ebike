@@ -1,27 +1,29 @@
 <?php
-// database/seeders/ProductSeeder.php
 
 namespace Database\Seeders;
 
+use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\Category;
-use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
 {
     public function run()
     {
-        $mountainCategory = Category::where('slug', 'mountain-e-bikes')->first();
-        $cityCategory = Category::where('slug', 'city-e-bikes')->first();
-        $foldingCategory = Category::where('slug', 'folding-e-bikes')->first();
-        $batteryCategory = Category::where('slug', 'e-bike-batteries')->first();
-        $motorCategory = Category::where('slug', 'e-bike-motors')->first();
-        $controllerCategory = Category::where('slug', 'e-bike-controllers')->first();
-        $chargerCategory = Category::where('slug', 'e-bike-chargers')->first();
-        $accessoryCategory = Category::where('slug', 'e-bike-accessories')->first();
+        // Ensure all required categories exist
+        $mountainCategory   = Category::firstOrCreate(['slug' => 'mountain-e-bikes'],   ['name' => 'Mountain E-Bikes']);
+        $cityCategory       = Category::firstOrCreate(['slug' => 'city-e-bikes'],       ['name' => 'City E-Bikes']);
+        $foldingCategory    = Category::firstOrCreate(['slug' => 'folding-e-bikes'],    ['name' => 'Folding E-Bikes']);
+        $batteryCategory    = Category::firstOrCreate(['slug' => 'e-bike-batteries'],   ['name' => 'E-Bike Batteries']);
+        $motorCategory      = Category::firstOrCreate(['slug' => 'e-bike-motors'],      ['name' => 'E-Bike Motors']);
+        $controllerCategory = Category::firstOrCreate(['slug' => 'e-bike-controllers'], ['name' => 'E-Bike Controllers']);
+        $chargerCategory    = Category::firstOrCreate(['slug' => 'e-bike-chargers'],    ['name' => 'E-Bike Chargers']);
+        $accessoryCategory  = Category::firstOrCreate(['slug' => 'e-bike-accessories'], ['name' => 'E-Bike Accessories']);
 
+        // Product list
         $products = [
-            // Mountain E-Bikes (Units)
+            // Your full product array goes here (unchanged)
+             // Mountain E-Bikes (Units)
             [
                 'name' => 'TrailBlazer Pro 29"',
                 'sku' => 'MTB-TB-PRO-29',
@@ -218,6 +220,7 @@ class ProductSeeder extends Seeder
             ],
         ];
 
+        // Seed products
         foreach ($products as $product) {
             Product::create($product);
         }
