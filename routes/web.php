@@ -18,7 +18,7 @@ Route::get('/', function () {
     if (Auth::check()) {
         return redirect('/dashboard');
     }
-    return redirect('/login');
+    return redirect('/register');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
