@@ -4,10 +4,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Inventory;
-use App\Models\Branch;
 use App\Models\Product;
+use App\Models\Branch;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
 
 class InventoryController extends Controller
 {
@@ -31,6 +35,11 @@ class InventoryController extends Controller
             });
         }
 
+        // Filter by low stock
+        if ($request->filled('low_stock')) {
+            $query->whereRaw('stock_quantity <= min_stock_level');
+        }
+
         // Filter by product type
         if ($request->filled('type')) {
             $query->whereHas('product', function ($q) use ($request) {
@@ -38,15 +47,16 @@ class InventoryController extends Controller
             });
         }
 
-        // Filter low stock
-        if ($request->filled('low_stock')) {
-            $query->whereRaw('stock_quantity <= min_stock_level');
-        }
-
         $inventories = $query->paginate(15)->withQueryString();
         $branches = Branch::where('is_active', true)->get();
 
-        return view('inventory.index', compact('inventories', 'branches'));
+        $stats = [
+            'total_items' => $query->count(),
+            'low_stock_items' => Inventory::whereRaw('stock_quantity <= min_stock_level')->count(),
+            'out_of_stock' => Inventory::where('stock_quantity', 0)->count(),
+        ];
+
+        return view('inventory.index', compact('inventories', 'branches', 'stats'));
     }
 
     public function byBranch(Branch $branch)
@@ -55,18 +65,19 @@ class InventoryController extends Controller
             abort(403, 'Access denied to this branch.');
         }
 
-        $inventories = Inventory::with('product')
+        $inventories = Inventory::with(['product'])
                                ->where('branch_id', $branch->id)
                                ->paginate(15);
 
-        return view('inventory.branch', compact('branch', 'inventories'));
+        return view('inventory.branch', compact('inventories', 'branch'));
     }
 
     public function adjust(Request $request)
     {
         $validated = $request->validate([
             'inventory_id' => 'required|exists:inventories,id',
-            'adjustment' => 'required|integer',
+            'adjustment_type' => 'required|in:add,subtract,set',
+            'quantity' => 'required|integer|min:0',
             'reason' => 'required|string|max:255',
         ]);
 
@@ -76,17 +87,39 @@ class InventoryController extends Controller
             return response()->json(['error' => 'Access denied'], 403);
         }
 
-        $newQuantity = $inventory->stock_quantity + $validated['adjustment'];
+        DB::transaction(function () use ($inventory, $validated) {
+            $oldQuantity = $inventory->stock_quantity;
 
-        if ($newQuantity < 0) {
-            return response()->json(['error' => 'Cannot reduce stock below zero'], 400);
-        }
+            switch ($validated['adjustment_type']) {
+                case 'add':
+                    $inventory->addStock($validated['quantity']);
+                    break;
+                case 'subtract':
+                    if ($inventory->stock_quantity >= $validated['quantity']) {
+                        $inventory->removeStock($validated['quantity']);
+                    } else {
+                        throw new \Exception('Insufficient stock to subtract.');
+                    }
+                    break;
+                case 'set':
+                    $inventory->update(['stock_quantity' => $validated['quantity']]);
+                    break;
+            }
 
-        $inventory->update(['stock_quantity' => $newQuantity]);
+            // Log the adjustment (you can create a separate model for this)
+            Log::info('Inventory adjustment', [
+                'user_id' => Auth::id(),
+                'inventory_id' => $inventory->id,
+                'product' => $inventory->product->name,
+                'branch' => $inventory->branch->name,
+                'old_quantity' => $oldQuantity,
+                'new_quantity' => $inventory->fresh()->stock_quantity,
+                'adjustment_type' => $validated['adjustment_type'],
+                'quantity' => $validated['quantity'],
+                'reason' => $validated['reason'],
+            ]);
+        });
 
-        return response()->json([
-            'message' => 'Stock adjusted successfully',
-            'new_quantity' => $newQuantity
-        ]);
+        return response()->json(['success' => 'Inventory adjusted successfully']);
     }
 }

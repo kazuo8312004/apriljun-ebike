@@ -1,5 +1,5 @@
 <?php
-// app/Models/User.php
+// app/Models/User.php - UPDATED with missing methods
 
 namespace App\Models;
 
@@ -53,19 +53,38 @@ class User extends Authenticatable
         return $this->hasMany(Loan::class);
     }
 
-    // Methods
+    // FIXED: Missing Methods
+    /**
+     * Check if user is an admin.
+     */
     public function isAdmin()
     {
         return $this->role === 'admin';
     }
 
+    /**
+     * Check if user can access a specific branch.
+     */
+    public function canAccessBranch($branchId)
+    {
+        return $this->isAdmin() || $this->branch_id == $branchId;
+    }
+
+    /**
+     * Check if user is a manager.
+     */
     public function isManager()
     {
         return $this->role === 'manager';
     }
 
-    public function canAccessBranch($branchId)
+    public function canManageBranch($branchId)
     {
-        return $this->isAdmin() || $this->branch_id == $branchId;
+        return $this->isAdmin() || ($this->isManager() && $this->branch_id == $branchId);
+    }
+
+    public function getBranchCode()
+    {
+        return $this->branch ? $this->branch->code : null;
     }
 }

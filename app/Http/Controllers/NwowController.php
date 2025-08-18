@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class NwowController extends Controller
 {

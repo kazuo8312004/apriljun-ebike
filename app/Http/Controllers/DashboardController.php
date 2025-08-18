@@ -10,8 +10,10 @@ use App\Models\NwowUnit;
 use App\Models\Loan;
 use App\Models\Transfer;
 use App\Models\Inventory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
