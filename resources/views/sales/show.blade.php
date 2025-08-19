@@ -1,82 +1,153 @@
-@extends('layouts.app')
-
-@section('title', 'Sale Details')
-
-@section('content')
-<div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <div>
-            <h2 class="text-xl font-semibold text-gray-900">Sale Details</h2>
-            <p class="text-gray-600">{{ $sale->sale_number }}</p>
-        </div>
-        <div class="flex space-x-2">
-            <button onclick="window.print()" class="btn btn-primary text-sm">
-                Print Receipt
-            </button>
-            @if($sale->status === 'pending')
-                <a href="{{ route('sales.edit', $sale) }}" class="btn btn-success text-sm">
-                    Edit Sale
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Sale Details: {{ $sale->sale_number }}
+            </h2>
+            <div class="flex space-x-2">
+                @if($sale->status === 'completed')
+                    <a href="{{ route('sales.edit', $sale) }}" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+                        Edit Sale
+                    </a>
+                @endif
+                <a href="{{ route('sales.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Back to Sales
                 </a>
-            @endif
-            <a href="{{ route('sales.index') }}" class="btn" style="border: 1px solid #d1d5db;">
-                Back to Sales
-            </a>
+            </div>
         </div>
-    </div>
+    </x-slot>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Sale Information -->
-        <div class="lg:col-span-2 space-y-6">
-            <!-- Customer Info -->
-            <div class="card">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Customer Information</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500">Name</label>
-                        <p class="mt-1 text-sm text-gray-900">{{ $sale->customer_name }}</p>
+    <div class="py-6">
+        <div class="max-w-6xl mx-auto">
+            <!-- Sale Information -->
+            <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Sale Information</h3>
+                </div>
+                <div class="px-6 py-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Sale Number</h4>
+                            <p class="mt-1 text-sm text-gray-900 font-mono">{{ $sale->sale_number }}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Sale Date</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->sale_date->format('M d, Y') }}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Status</h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                @if($sale->status === 'completed') bg-green-100 text-green-800
+                                @elseif($sale->status === 'pending') bg-yellow-100 text-yellow-800
+                                @else bg-red-100 text-red-800 @endif">
+                                {{ ucfirst($sale->status) }}
+                            </span>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Branch</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->branch->name }}</p>
+                            <p class="text-xs text-gray-500">{{ $sale->branch->code }}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Staff</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->user->name }}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Payment Method</h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                @if($sale->payment_method === 'cash') bg-green-100 text-green-800
+                                @elseif($sale->payment_method === 'installment') bg-yellow-100 text-yellow-800
+                                @elseif($sale->payment_method === 'home_credit') bg-blue-100 text-blue-800
+                                @else bg-gray-100 text-gray-800 @endif">
+                                {{ ucfirst(str_replace('_', ' ', $sale->payment_method)) }}
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500">Email</label>
-                        <p class="mt-1 text-sm text-gray-900">{{ $sale->customer_email ?: 'Not provided' }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500">Phone</label>
-                        <p class="mt-1 text-sm text-gray-900">{{ $sale->customer_phone ?: 'Not provided' }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500">Payment Method</label>
-                        <p class="mt-1 text-sm text-gray-900 capitalize">{{ str_replace('_', ' ', $sale->payment_method) }}</p>
+                </div>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Customer Information</h3>
+                </div>
+                <div class="px-6 py-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Name</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->customer_name }}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Phone</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->customer_phone ?: 'N/A' }}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Email</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->customer_email ?: 'N/A' }}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Address</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->customer_address ?: 'N/A' }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Sale Items -->
-            <div class="card">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Items Purchased</h3>
+            <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Sale Items</h3>
+                </div>
                 <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <th>Product</th>
-                                <th>Category</th>
-                                <th>Unit Price</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Details</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($sale->items as $item)
                                 <tr>
-                                    <td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <div>
-                                            <p class="font-medium text-gray-900">{{ $item->product->name }}</p>
-                                            <p class="text-sm text-gray-500">{{ $item->product->sku }}</p>
+                                            <div class="text-sm font-medium text-gray-900">{{ $item->product->name }}</div>
+                                            <div class="text-sm text-gray-500">{{ $item->product->brand }} - {{ $item->product->model }}</div>
                                         </div>
                                     </td>
-                                    <td>{{ $item->product->category->name }}</td>
-                                    <td>₱{{ number_format($item->unit_price, 2) }}</td>
-                                    <td>{{ $item->quantity }}</td>
-                                    <td>₱{{ number_format($item->total_price, 2) }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($item->nwowUnit)
+                                            <div class="text-sm text-gray-900">
+                                                <div><strong>Chassis:</strong> {{ $item->nwowUnit->chassis_no }}</div>
+                                                <div><strong>Color:</strong> {{ $item->nwowUnit->color ?: 'N/A' }}</div>
+                                                @if($item->nwowUnit->motor_no)
+                                                    <div><strong>Motor:</strong> {{ $item->nwowUnit->motor_no }}</div>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-sm text-gray-500">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $item->quantity }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        ₱{{ number_format($item->unit_price, 2) }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                        ₱{{ number_format($item->total_price, 2) }}
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -84,89 +155,98 @@
                 </div>
             </div>
 
-            @if($sale->notes)
-                <!-- Notes -->
-                <div class="card">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Notes</h3>
-                    <p class="text-gray-700">{{ $sale->notes }}</p>
+            <!-- Sale Summary -->
+            <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Sale Summary</h3>
                 </div>
-            @endif
-        </div>
-
-        <!-- Sale Summary -->
-        <div class="space-y-6">
-            <div class="card">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Sale Summary</h3>
-                <div class="space-y-3">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Subtotal</span>
-                        <span class="text-gray-900">₱{{ number_format($sale->total_amount, 2) }}</span>
+                <div class="px-6 py-4">
+                    <div class="space-y-4">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Subtotal:</span>
+                            <span class="text-sm font-medium">₱{{ number_format($sale->total_amount, 2) }}</span>
+                        </div>
+                        
+                        @if($sale->discount > 0)
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600">Discount:</span>
+                                <span class="text-sm font-medium text-green-600">-₱{{ number_format($sale->discount, 2) }}</span>
+                            </div>
+                        @endif
+                        
+                        <div class="border-t border-gray-200 pt-4">
+                            <div class="flex justify-between">
+                                <span class="text-lg font-medium">Final Amount:</span>
+                                <span class="text-lg font-bold text-green-600">₱{{ number_format($sale->final_amount, 2) }}</span>
+                            </div>
+                        </div>
                     </div>
-                    @if($sale->discount > 0)
-                        <div class="flex justify-between text-green-600">
-                            <span>Discount</span>
-                            <span>-₱{{ number_format($sale->discount, 2) }}</span>
+                    
+                    @if($sale->notes)
+                        <div class="mt-6">
+                            <h4 class="text-sm font-medium text-gray-500">Notes</h4>
+                            <p class="mt-1 text-sm text-gray-900">{{ $sale->notes }}</p>
                         </div>
                     @endif
-                    <div class="border-t pt-3">
-                        <div class="flex justify-between text-lg font-medium">
-                            <span class="text-gray-900">Total</span>
-                            <span class="text-gray-900">₱{{ number_format($sale->final_amount, 2) }}</span>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 pt-4 border-t">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Status</span>
-                            <span class="badge
-                                {{ $sale->status === 'completed' ? 'badge-success' : ($sale->status === 'pending' ? 'badge-warning' : 'badge-danger') }}">
-                                {{ ucfirst($sale->status) }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between text-sm mt-2">
-                            <span class="text-gray-500">Sale Date</span>
-                            <span class="text-gray-900">{{ $sale->created_at->format('M d, Y H:i') }}</span>
-                        </div>
-                        <div class="flex justify-between text-sm mt-2">
-                            <span class="text-gray-500">Processed by</span>
-                            <span class="text-gray-900">{{ $sale->user->name }}</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- Actions -->
-            @if($sale->status !== 'cancelled')
-                <div class="card">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Actions</h3>
-                    <div class="space-y-2">
-                        @if($sale->status === 'pending')
-                            <a href="{{ route('sales.edit', $sale) }}"
-                               class="btn btn-success w-full text-center">
-                                Edit Sale
-                            </a>
-                        @endif
-
-                        <form method="POST" action="{{ route('sales.cancel', $sale) }}"
-                              onsubmit="return confirm('Are you sure you want to cancel this sale? Stock will be restored.')">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-danger w-full">
-                                Cancel Sale
-                            </button>
-                        </form>
+            <!-- NWOW Export Data -->
+            @if(!empty($nwowExportData))
+                <div class="bg-blue-50 overflow-hidden shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-blue-200">
+                        <h3 class="text-lg leading-6 font-medium text-blue-900">NWOW Export Data</h3>
+                        <p class="text-sm text-blue-600">Data format for sending to NWOW company</p>
+                    </div>
+                    <div class="px-6 py-4">
+                        @foreach($nwowExportData as $index => $data)
+                            <div class="bg-white border border-blue-200 rounded p-4 mb-4">
+                                <h4 class="font-medium text-blue-900 mb-2">Unit {{ $index + 1 }}</h4>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                    <div><strong>Date Sell:</strong> {{ $data['date_sell'] }}</div>
+                                    <div><strong>Customer:</strong> {{ $data['name_customer'] }}</div>
+                                    <div><strong>Number:</strong> {{ $data['number'] }}</div>
+                                    <div><strong>Address:</strong> {{ $data['address'] }}</div>
+                                    <div><strong>Unit:</strong> {{ $data['unit'] }}</div>
+                                    <div><strong>Color:</strong> {{ $data['color'] }}</div>
+                                    <div><strong>Package:</strong> {{ $data['package'] }}</div>
+                                    <div><strong>Chassis:</strong> {{ $data['chassis'] }}</div>
+                                    <div><strong>Motor:</strong> {{ $data['motor'] }}</div>
+                                    <div><strong>Battery:</strong> {{ $data['battery'] }}</div>
+                                    <div><strong>Controller:</strong> {{ $data['controller'] }}</div>
+                                    <div><strong>Charger:</strong> {{ $data['charger'] }}</div>
+                                    <div><strong>Remote:</strong> {{ $data['remote'] }}</div>
+                                </div>
+                                
+                                <!-- Copy button for each unit -->
+                                <div class="mt-3">
+                                    <button onclick="copyUnitData({{ $index }})" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm">
+                                        Copy Unit Data
+                                    </button>
+                                </div>
+                                
+                                <!-- Hidden textarea for copying -->
+                                <textarea id="unit-data-{{ $index }}" class="hidden">{{ implode(', ', $data) }}</textarea>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             @endif
         </div>
     </div>
-</div>
 
-<style>
-@media print {
-    .no-print { display: none !important; }
-    body { background: white !important; }
-    .card { box-shadow: none !important; border: 1px solid #ddd !important; }
-}
-</style>
-@endsection
+    @push('scripts')
+    <script>
+        function copyUnitData(index) {
+            const textarea = document.getElementById(`unit-data-${index}`);
+            textarea.style.display = 'block';
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            textarea.style.display = 'none';
+            
+            alert('Unit data copied to clipboard!');
+        }
+    </script>
+    @endpush
+</x-app-layout>

@@ -10,7 +10,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 
 class InventoryController extends Controller
@@ -107,7 +106,7 @@ class InventoryController extends Controller
             }
 
             // Log the adjustment (you can create a separate model for this)
-            Log::info('Inventory adjustment', [
+            \Log::info('Inventory adjustment', [
                 'user_id' => Auth::id(),
                 'inventory_id' => $inventory->id,
                 'product' => $inventory->product->name,

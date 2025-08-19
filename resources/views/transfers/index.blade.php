@@ -1,36 +1,29 @@
-// resources/views/transfers/index.blade.php
-
-@extends('layouts.app')
-
-@section('title', 'Transfers')
-
-@section('content')
-<div class="space-y-6">
-    <!-- Header with Actions -->
-    <div class="flex justify-between items-center">
-        <div>
-            <h2 class="text-xl font-semibold text-gray-900">Transfers</h2>
-            <p class="text-gray-600">Manage inventory transfers between branches</p>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Transfers') }}
+            </h2>
+            <a href="{{ route('transfers.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                New Transfer
+            </a>
         </div>
-        <a href="{{ route('transfers.create') }}" class="btn btn-primary">
-            New Transfer
-        </a>
-    </div>
+    </x-slot>
 
-    <!-- Search and Filters -->
-    <div class="card">
-        <form onsubmit="return handleSearch(this)" action="{{ route('transfers.index') }}" method="GET">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="py-6">
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Search</label>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Transfer number..."
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <input type="text" name="search" value="{{ request('search') }}" 
+                           placeholder="Transfer number..." 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <select name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <select name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option value="">All Status</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="in_transit" {{ request('status') == 'in_transit' ? 'selected' : '' }}>In Transit</option>
@@ -39,15 +32,14 @@
                     </select>
                 </div>
 
-                @if(Auth::user()->isAdmin())
+                @if(auth()->user()->isAdmin())
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Branch</label>
-                    <select name="branch_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <select name="branch_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option value="">All Branches</option>
                         @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}"
-                                    {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                                {{ $branch->name }} ({{ $branch->code }})
+                            <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
+                                {{ $branch->name }}
                             </option>
                         @endforeach
                     </select>
@@ -55,95 +47,91 @@
                 @endif
 
                 <div class="flex items-end">
-                    <button type="submit" class="btn btn-primary mr-2">Search</button>
-                    <a href="{{ route('transfers.index') }}" class="btn" style="border: 1px solid #d1d5db;">Clear</a>
+                    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Filter
+                    </button>
                 </div>
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
 
-    <!-- Transfers Table -->
-    <div class="card">
-        @if($transfers->count() > 0)
+        <!-- Transfers Table -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <th>Transfer Info</th>
-                            <th>From → To</th>
-                            <th>Items</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transfer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From → To</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach($transfers as $transfer)
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse($transfers as $transfer)
                             <tr>
-                                <td>
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <div>
-                                        <p class="font-medium text-gray-900">{{ $transfer->transfer_number }}</p>
-                                        <p class="text-sm text-gray-500">By: {{ $transfer->user->name }}</p>
+                                        <div class="text-sm font-medium text-gray-900">{{ $transfer->transfer_number }}</div>
+                                        <div class="text-sm text-gray-500">{{ $transfer->user->name }}</div>
                                     </div>
                                 </td>
-                                <td>
-                                    <div class="flex items-center">
-                                        <span class="branch-indicator branch-{{ strtolower($transfer->fromBranch->code) }}">
-                                            {{ $transfer->fromBranch->code }}
-                                        </span>
-                                        <span class="mx-2">→</span>
-                                        <span class="branch-indicator branch-{{ strtolower($transfer->toBranch->code) }}">
-                                            {{ $transfer->toBranch->code }}
-                                        </span>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ $transfer->fromBranch->code }} → {{ $transfer->toBranch->code }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ $transfer->fromBranch->name }} → {{ $transfer->toBranch->name }}
                                     </div>
                                 </td>
-                                <td>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {{ $transfer->items->count() }} item(s)
-                                    </span>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ $transfer->items->count() }} item(s)
                                 </td>
-                                <td>{{ $transfer->created_at->format('M d, Y H:i') }}</td>
-                                <td>
-                                    <span class="badge
-                                        {{ $transfer->status === 'completed' ? 'badge-success' :
-                                           ($transfer->status === 'pending' ? 'badge-warning' :
-                                           ($transfer->status === 'in_transit' ? 'badge-info' : 'badge-danger')) }}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        @if($transfer->status === 'pending') bg-yellow-100 text-yellow-800
+                                        @elseif($transfer->status === 'in_transit') bg-blue-100 text-blue-800
+                                        @elseif($transfer->status === 'completed') bg-green-100 text-green-800
+                                        @else bg-red-100 text-red-800 @endif">
                                         {{ ucfirst(str_replace('_', ' ', $transfer->status)) }}
                                     </span>
                                 </td>
-                                <td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ $transfer->created_at->format('M d, Y') }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div class="flex space-x-2">
-                                        <a href="{{ route('transfers.show', $transfer) }}"
-                                           class="text-blue-600 hover:text-blue-800 text-sm">View</a>
-
-                                        @if($transfer->status === 'pending' && Auth::user()->canAccessBranch($transfer->from_branch_id))
-                                            <form method="POST" action="{{ route('transfers.approve', $transfer) }}"
-                                                  style="display: inline;">
+                                        <a href="{{ route('transfers.show', $transfer) }}" class="text-blue-600 hover:text-blue-900">View</a>
+                                        
+                                        @if($transfer->status === 'pending')
+                                            <form method="POST" action="{{ route('transfers.approve', $transfer) }}" class="inline">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button type="submit" class="text-green-600 hover:text-green-800 text-sm">
+                                                <button type="submit" class="text-green-600 hover:text-green-900"
+                                                        onclick="return confirm('Approve this transfer? Items will be marked as in transit.')">
                                                     Approve
                                                 </button>
                                             </form>
                                         @endif
-
-                                        @if($transfer->status === 'in_transit' && Auth::user()->canAccessBranch($transfer->to_branch_id))
-                                            <form method="POST" action="{{ route('transfers.receive', $transfer) }}"
-                                                  style="display: inline;">
+                                        
+                                        @if($transfer->status === 'in_transit' && auth()->user()->canAccessBranch($transfer->to_branch_id))
+                                            <form method="POST" action="{{ route('transfers.receive', $transfer) }}" class="inline">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button type="submit" class="text-blue-600 hover:text-blue-800 text-sm">
+                                                <button type="submit" class="text-indigo-600 hover:text-indigo-900"
+                                                        onclick="return confirm('Receive this transfer? Items will be added to your branch inventory.')">
                                                     Receive
                                                 </button>
                                             </form>
                                         @endif
-
+                                        
                                         @if(in_array($transfer->status, ['pending', 'in_transit']))
-                                            <form method="POST" action="{{ route('transfers.cancel', $transfer) }}"
-                                                  style="display: inline;" onsubmit="return confirmDelete(event)">
+                                            <form method="POST" action="{{ route('transfers.cancel', $transfer) }}" class="inline">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button type="submit" class="text-yellow-600 hover:text-yellow-800 text-sm">
+                                                <button type="submit" class="text-red-600 hover:text-red-900"
+                                                        onclick="return confirm('Cancel this transfer? Items will be restored to the source branch.')">
                                                     Cancel
                                                 </button>
                                             </form>
@@ -151,23 +139,21 @@
                                     </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                    No transfers found
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
-            <div class="mt-4">
+            <div class="bg-white px-4 py-3 border-t border-gray-200">
                 {{ $transfers->links() }}
             </div>
-        @else
-            <div class="text-center py-12">
-                <p class="text-gray-500">No transfers found.</p>
-                <a href="{{ route('transfers.create') }}" class="btn btn-primary mt-4">
-                    Create Your First Transfer
-                </a>
-            </div>
-        @endif
+        </div>
     </div>
-</div>
-@endsection
+</x-app-layout>

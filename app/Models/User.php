@@ -54,28 +54,30 @@ class User extends Authenticatable
     }
 
     // FIXED: Missing Methods
-    /**
-     * Check if user is an admin.
-     */
     public function isAdmin()
     {
         return $this->role === 'admin';
     }
 
-    /**
-     * Check if user can access a specific branch.
-     */
-    public function canAccessBranch($branchId)
-    {
-        return $this->isAdmin() || $this->branch_id == $branchId;
-    }
-
-    /**
-     * Check if user is a manager.
-     */
     public function isManager()
     {
         return $this->role === 'manager';
+    }
+
+    public function isStaff()
+    {
+        return $this->role === 'staff';
+    }
+
+    public function canAccessBranch($branchId)
+    {
+        // Admin can access all branches
+        if ($this->isAdmin()) {
+            return true;
+        }
+        
+        // Other users can only access their assigned branch
+        return $this->branch_id == $branchId;
     }
 
     public function canManageBranch($branchId)

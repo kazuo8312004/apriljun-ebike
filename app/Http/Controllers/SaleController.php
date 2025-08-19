@@ -12,7 +12,6 @@ use App\Models\Inventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
 
 class SaleController extends Controller
 {
@@ -125,7 +124,7 @@ class SaleController extends Controller
             // Create sale items and update inventory
             foreach ($validated['items'] as $item) {
                 $product = Product::findOrFail($item['product_id']);
-
+                
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
@@ -157,12 +156,12 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
-        if (!User::user()->canAccessBranch($sale->branch_id)) {
+        if (!Auth::user()->canAccessBranch($sale->branch_id)) {
             abort(403, 'Access denied to this sale record.');
         }
 
         $sale->load(['user', 'branch', 'items.product', 'items.nwowUnit']);
-
+        
         // Get NWOW export format if sale contains units
         $nwowExportData = [];
         foreach ($sale->items as $item) {

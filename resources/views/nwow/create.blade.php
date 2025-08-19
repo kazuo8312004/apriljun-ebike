@@ -1,167 +1,169 @@
-{{-- resources/views/nwow/index.blade.php --}}
-
-@extends('layouts.app')
-
-@section('title', 'NWOW - Unit Tracking')
-
-@section('content')
-<div class="space-y-6">
-    <!-- Header with Actions -->
-    <div class="flex justify-between items-center">
-        <div>
-            <h2 class="text-xl font-semibold text-gray-900">NWOW - Unit Tracking</h2>
-            <p class="text-gray-600">Track individual units with detailed information</p>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Add New Unit to NWOW') }}
+            </h2>
+            <a href="{{ route('nwow.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                Back to Units
+            </a>
         </div>
-        <a href="{{ route('nwow.create') }}" class="btn btn-primary">
-            Add New Unit
-        </a>
-    </div>
+    </x-slot>
 
-    <!-- Search and Filters -->
-    <div class="card">
-        <form onsubmit="return handleSearch(this)" action="{{ route('nwow.index') }}" method="GET">
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Search</label>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Chassis, Motor, Battery..."
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
+    <div class="py-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <form action="{{ route('nwow.store') }}" method="POST" class="p-6">
+                    @csrf
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Product Selection -->
+                        <div>
+                            <label for="product_id" class="block text-sm font-medium text-gray-700">Product*</label>
+                            <select name="product_id" id="product_id" required 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">Select Product</option>
+                                @foreach($products as $product)
+                                    <option value="{{ $product->id }}" {{ old('product_id') == $product->id ? 'selected' : '' }}>
+                                        {{ $product->name }} - {{ $product->brand }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('product_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-                @if(Auth::user()->isAdmin())
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Branch</label>
-                    <select name="branch_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        <option value="">All Branches</option>
-                        @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}"
-                                    {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                                {{ $branch->name }} ({{ $branch->code }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                @endif
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Product</label>
-                    <select name="product_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        <option value="">All Products</option>
-                        @foreach($products as $product)
-                            <option value="{{ $product->id }}"
-                                    {{ request('product_id') == $product->id ? 'selected' : '' }}>
-                                {{ $product->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Status</label>
-                    <select name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        <option value="">All Status</option>
-                        <option value="in_stock" {{ request('status') == 'in_stock' ? 'selected' : '' }}>In Stock</option>
-                        <option value="sold" {{ request('status') == 'sold' ? 'selected' : '' }}>Sold</option>
-                        <option value="loaned" {{ request('status') == 'loaned' ? 'selected' : '' }}>Loaned</option>
-                        <option value="transferred" {{ request('status') == 'transferred' ? 'selected' : '' }}>Transferred</option>
-                    </select>
-                </div>
-
-                <div class="flex items-end">
-                    <button type="submit" class="btn btn-primary mr-2">Search</button>
-                    <a href="{{ route('nwow.index') }}" class="btn" style="border: 1px solid #d1d5db;">Clear</a>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- Units Table -->
-    <div class="card">
-        @if($units->count() > 0)
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Unit Info</th>
-                            <th>Product</th>
-                            @if(Auth::user()->isAdmin())
-                            <th>Branch</th>
-                            @endif
-                            <th>Chassis No.</th>
-                            <th>Color</th>
-                            <th>Purchase Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($units as $unit)
-                            <tr>
-                                <td>
-                                    <div>
-                                        <p class="font-medium text-gray-900">{{ $unit->product->name }}</p>
-                                        <p class="text-sm text-gray-500">₱{{ number_format($unit->purchase_price, 2) }}</p>
-                                    </div>
-                                </td>
-                                <td>{{ $unit->product->brand }} {{ $unit->product->model }}</td>
-                                @if(Auth::user()->isAdmin())
-                                <td>
-                                    <span class="branch-indicator branch-{{ strtolower($unit->branch->code) }}">
-                                        {{ $unit->branch->code }}
-                                    </span>
-                                </td>
+                        <!-- Branch Selection -->
+                        <div>
+                            <label for="branch_id" class="block text-sm font-medium text-gray-700">Branch*</label>
+                            <select name="branch_id" id="branch_id" required 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                @if(auth()->user()->isAdmin())
+                                    <option value="">Select Branch</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                @else
+                                    <option value="{{ auth()->user()->branch_id }}" selected>
+                                        {{ auth()->user()->branch->name }}
+                                    </option>
                                 @endif
-                                <td>
-                                    <span class="font-mono text-sm">{{ $unit->chassis_no }}</span>
-                                </td>
-                                <td>{{ $unit->color ?? 'N/A' }}</td>
-                                <td>{{ $unit->purchase_date->format('M d, Y') }}</td>
-                                <td>
-                                    <span class="badge
-                                        {{ $unit->status === 'in_stock' ? 'badge-success' :
-                                           ($unit->status === 'sold' ? 'badge-info' :
-                                           ($unit->status === 'loaned' ? 'badge-warning' : 'badge-danger')) }}">
-                                        {{ ucfirst(str_replace('_', ' ', $unit->status)) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="flex space-x-2">
-                                        <a href="{{ route('nwow.show', $unit) }}"
-                                           class="text-blue-600 hover:text-blue-800 text-sm">View</a>
+                            </select>
+                            @error('branch_id')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-                                        @if($unit->status === 'in_stock')
-                                            <a href="{{ route('nwow.edit', $unit) }}"
-                                               class="text-green-600 hover:text-green-800 text-sm">Edit</a>
+                        <!-- Chassis Number -->
+                        <div>
+                            <label for="chassis_no" class="block text-sm font-medium text-gray-700">Chassis Number*</label>
+                            <input type="text" name="chassis_no" id="chassis_no" value="{{ old('chassis_no') }}" required
+                                   placeholder="e.g., R3N4132A0SB004438"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('chassis_no')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-                                            <form method="POST" action="{{ route('nwow.destroy', $unit) }}"
-                                                  style="display: inline;" onsubmit="return confirmDelete(event)">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-800 text-sm">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                        <!-- Motor Number -->
+                        <div>
+                            <label for="motor_no" class="block text-sm font-medium text-gray-700">Motor Number</label>
+                            <input type="text" name="motor_no" id="motor_no" value="{{ old('motor_no') }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('motor_no')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-            <!-- Pagination -->
-            <div class="mt-4">
-                {{ $units->links() }}
+                        <!-- Battery Number -->
+                        <div>
+                            <label for="battery_no" class="block text-sm font-medium text-gray-700">Battery Number</label>
+                            <input type="text" name="battery_no" id="battery_no" value="{{ old('battery_no') }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('battery_no')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Controller Number -->
+                        <div>
+                            <label for="controller_no" class="block text-sm font-medium text-gray-700">Controller Number</label>
+                            <input type="text" name="controller_no" id="controller_no" value="{{ old('controller_no') }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('controller_no')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Charger Number -->
+                        <div>
+                            <label for="charger_no" class="block text-sm font-medium text-gray-700">Charger Number</label>
+                            <input type="text" name="charger_no" id="charger_no" value="{{ old('charger_no') }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('charger_no')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Remote Number -->
+                        <div>
+                            <label for="remote_no" class="block text-sm font-medium text-gray-700">Remote Number</label>
+                            <input type="text" name="remote_no" id="remote_no" value="{{ old('remote_no') }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('remote_no')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Color -->
+                        <div>
+                            <label for="color" class="block text-sm font-medium text-gray-700">Color</label>
+                            <input type="text" name="color" id="color" value="{{ old('color') }}"
+                                   placeholder="e.g., Red, Blue, Black"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('color')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Purchase Date -->
+                        <div>
+                            <label for="purchase_date" class="block text-sm font-medium text-gray-700">Purchase Date*</label>
+                            <input type="date" name="purchase_date" id="purchase_date" value="{{ old('purchase_date') }}" required
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @error('purchase_date')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Purchase Price -->
+                        <div>
+                            <label for="purchase_price" class="block text-sm font-medium text-gray-700">Purchase Price*</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">₱</span>
+                                </div>
+                                <input type="number" name="purchase_price" id="purchase_price" 
+                                       value="{{ old('purchase_price') }}" required step="0.01" min="0"
+                                       class="pl-8 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+                            @error('purchase_price')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="mt-6">
+                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            Add Unit to NWOW
+                        </button>
+                    </div>
+                </form>
             </div>
-        @else
-            <div class="text-center py-12">
-                <p class="text-gray-500">No units found.</p>
-                <a href="{{ route('nwow.create') }}" class="btn btn-primary mt-4">
-                    Add Your First Unit
-                </a>
-            </div>
-        @endif
+        </div>
     </div>
-</div>
-@endsection
+</x-app-layout>
