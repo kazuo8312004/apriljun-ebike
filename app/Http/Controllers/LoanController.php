@@ -19,7 +19,7 @@ class LoanController extends Controller
 
         // Filter by branch (if user is not admin)
         if (!Auth::user()->isAdmin()) {
-            $query->where('branch_id', Auth::user()->branch_id);
+            $query->where('branch_id', Auth::user()->getSelectedBranchId());
         } elseif ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
         }
@@ -53,7 +53,7 @@ class LoanController extends Controller
 
     public function create()
     {
-        $userBranch = Auth::user()->branch_id;
+        $userBranch = Auth::user()->getSelectedBranchId();
         $availableUnits = NwowUnit::with('product')
                                  ->where('branch_id', $userBranch)
                                  ->where('status', 'in_stock')
@@ -80,15 +80,15 @@ class LoanController extends Controller
 
         $unit = NwowUnit::findOrFail($validated['nwow_unit_id']);
 
-        if ($unit->status !== 'in_stock' || $unit->branch_id != Auth::user()->branch_id) {
+        if ($unit->status !== 'in_stock' || $unit->branch_id != Auth::user()->getSelectedBranchId()) {
             return redirect()->route('loans.create')
                 ->with('error', 'Selected unit is not available for loan.');
         }
 
         DB::transaction(function () use ($validated, $unit) {
             $loan = Loan::create([
-                'loan_number' => Loan::generateLoanNumber(Auth::user()->branch->code),
-                'branch_id' => Auth::user()->branch_id,
+                'loan_number' => Loan::generateLoanNumber(Auth::user()->getBranchCode()),
+                'branch_id' => Auth::user()->getSelectedBranchId(),
                 'user_id' => Auth::id(),
                 'nwow_unit_id' => $unit->id,
                 'borrower_name' => $validated['borrower_name'],

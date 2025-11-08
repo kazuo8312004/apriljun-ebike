@@ -12,6 +12,9 @@ use App\Models\Inventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use App\Events\SaleCompleted;
+use App\Models\Photo;
 
 class SaleController extends Controller
 {
@@ -21,7 +24,7 @@ class SaleController extends Controller
 
         // Filter by branch (if user is not admin)
         if (!Auth::user()->isAdmin()) {
-            $query->where('branch_id', Auth::user()->branch_id);
+            $query->where('branch_id', Auth::user()->getSelectedBranchId());
         } elseif ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
         }
@@ -64,7 +67,7 @@ class SaleController extends Controller
 
     public function create()
     {
-        $userBranch = Auth::user()->branch_id;
+        $userBranch = Auth::user()->getSelectedBranchId();
         $products = Product::where('status', 'active')->get();
         $availableUnits = NwowUnit::with('product')
                                  ->where('branch_id', $userBranch)
@@ -90,9 +93,11 @@ class SaleController extends Controller
             'items.*.nwow_unit_id' => 'nullable|exists:nwow_units,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
+            'photos' => 'nullable|array',
+            'photos.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $userBranch = Auth::user()->branch_id;
+        $userBranch = Auth::user()->getSelectedBranchId();
 
         DB::transaction(function () use ($validated, $userBranch) {
             // Calculate totals
@@ -105,7 +110,7 @@ class SaleController extends Controller
 
             // Create sale
             $sale = Sale::create([
-                'sale_number' => Sale::generateSaleNumber(Auth::user()->branch->code),
+                'sale_number' => Sale::generateSaleNumber(Auth::user()->getBranchCode()),
                 'user_id' => Auth::id(),
                 'branch_id' => $userBranch,
                 'customer_name' => $validated['customer_name'],
@@ -124,7 +129,7 @@ class SaleController extends Controller
             // Create sale items and update inventory
             foreach ($validated['items'] as $item) {
                 $product = Product::findOrFail($item['product_id']);
-                
+
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
@@ -148,6 +153,28 @@ class SaleController extends Controller
                     }
                 }
             }
+
+            // Handle photo uploads
+            if (isset($validated['photos']) && is_array($validated['photos'])) {
+                foreach ($validated['photos'] as $photo) {
+                    if ($photo) {
+                        $path = $photo->store('sales', 'public');
+                        Photo::create([
+                            'path' => $path,
+                            'filename' => $photo->getClientOriginalName(),
+                            'mime_type' => $photo->getMimeType(),
+                            'size' => $photo->getSize(),
+                            'model_type' => Sale::class,
+                            'model_id' => $sale->id,
+                            'category' => 'sale',
+                            'description' => 'Sale photo',
+                        ]);
+                    }
+                }
+            }
+
+            // Fire sale completed event
+            event(new SaleCompleted($sale, Auth::user()));
         });
 
         return redirect()->route('sales.index')
@@ -161,7 +188,7 @@ class SaleController extends Controller
         }
 
         $sale->load(['user', 'branch', 'items.product', 'items.nwowUnit']);
-        
+
         // Get NWOW export format if sale contains units
         $nwowExportData = [];
         foreach ($sale->items as $item) {

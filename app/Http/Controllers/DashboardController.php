@@ -20,7 +20,7 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $userBranch = $user->branch_id;
+        $userBranch = $user->getSelectedBranchId();
 
         if ($user->isAdmin()) {
             // Admin dashboard - system-wide stats

@@ -18,7 +18,7 @@ class NwowController extends Controller
 
         // Filter by branch (if user is not admin)
         if (Auth::check() && !Auth::user()->isAdmin()) {
-            $query->where('branch_id', Auth::user()->branch_id);
+            $query->where('branch_id', Auth::user()->getSelectedBranchId());
         } elseif ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
         }

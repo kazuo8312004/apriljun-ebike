@@ -13,6 +13,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Photo;
 
 class TransferController extends Controller
 {
@@ -22,7 +24,7 @@ class TransferController extends Controller
 
         // Filter by branch access
         if (!Auth::user()->isAdmin()) {
-            $userBranch = Auth::user()->branch_id;
+            $userBranch = Auth::user()->getSelectedBranchId();
             $query->where(function ($q) use ($userBranch) {
                 $q->where('from_branch_id', $userBranch)
                   ->orWhere('to_branch_id', $userBranch);
@@ -58,7 +60,7 @@ class TransferController extends Controller
     public function create()
     {
         $branches = Branch::where('is_active', true)->get();
-        $userBranch = Auth::user()->branch_id;
+        $userBranch = Auth::user()->getSelectedBranchId();
 
         return view('transfers.create', compact('branches', 'userBranch'));
     }
@@ -73,6 +75,8 @@ class TransferController extends Controller
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.nwow_unit_id' => 'nullable|exists:nwow_units,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'photos' => 'nullable|array',
+            'photos.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -121,6 +125,25 @@ class TransferController extends Controller
                         'quantity' => $item['quantity'],
                         'notes' => $item['notes'] ?? null,
                     ]);
+                }
+            }
+
+            // Handle photo uploads
+            if (isset($validated['photos']) && is_array($validated['photos'])) {
+                foreach ($validated['photos'] as $photo) {
+                    if ($photo) {
+                        $path = $photo->store('transfers', 'public');
+                        Photo::create([
+                            'path' => $path,
+                            'filename' => $photo->getClientOriginalName(),
+                            'mime_type' => $photo->getMimeType(),
+                            'size' => $photo->getSize(),
+                            'model_type' => Transfer::class,
+                            'model_id' => $transfer->id,
+                            'category' => 'transfer',
+                            'description' => 'Transfer photo',
+                        ]);
+                    }
                 }
             }
         });

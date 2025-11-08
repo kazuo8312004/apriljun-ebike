@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Events\InventoryAdded;
 
 
 class InventoryController extends Controller
@@ -20,7 +22,7 @@ class InventoryController extends Controller
 
         // Filter by branch (if user is not admin)
         if (!Auth::user()->isAdmin()) {
-            $query->where('branch_id', Auth::user()->branch_id);
+            $query->where('branch_id', Auth::user()->getSelectedBranchId());
         } elseif ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
         }
@@ -105,8 +107,8 @@ class InventoryController extends Controller
                     break;
             }
 
-            // Log the adjustment (you can create a separate model for this)
-            \Log::info('Inventory adjustment', [
+            // Log the adjustment and fire event if stock was added
+            Log::info('Inventory adjustment', [
                 'user_id' => Auth::id(),
                 'inventory_id' => $inventory->id,
                 'product' => $inventory->product->name,
@@ -117,6 +119,11 @@ class InventoryController extends Controller
                 'quantity' => $validated['quantity'],
                 'reason' => $validated['reason'],
             ]);
+
+            // Fire event if stock was added
+            if ($validated['adjustment_type'] === 'add') {
+                event(new InventoryAdded($inventory, Auth::user(), $validated['quantity'], $validated['reason']));
+            }
         });
 
         return response()->json(['success' => 'Inventory adjusted successfully']);
